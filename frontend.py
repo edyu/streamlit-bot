@@ -6,6 +6,9 @@ if "bot" not in st.session_state:
     st.session_state.bot = Bot(api_keys)
 bot = st.session_state.bot
 
+for message in bot.get_history():
+    st.chat_message(message.type).markdown(message.content)
+
 if human_message_text := st.chat_input("Chat with me!"):
     st.chat_message("human").markdown(human_message_text)
     ai_message_text = bot.chat(human_message_text)

@@ -17,3 +17,6 @@ class Bot:
     def chat(self, human_message_text):
         final_state = self.graph.invoke(human_message_text)
         return final_state["messages"][-1].content
+
+    def get_history(self):
+        return self.graph.get_conversation()
