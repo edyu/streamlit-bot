@@ -3,7 +3,8 @@ from bot import Bot
 
 if "bot" not in st.session_state:
     api_keys = st.secrets["api_keys"]
-    st.session_state.bot = Bot(api_keys)
+    config = st.secrets["config"]
+    st.session_state.bot = Bot(api_keys, config)
 bot = st.session_state.bot
 
 for message in bot.get_history():
