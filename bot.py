@@ -1,13 +1,14 @@
 from langchain_openai import ChatOpenAI
 from graph import SupportAgentGraph
 from vector_store import VectorStore
+from tools import tools
 
 class Bot:
     def __init__(self, api_keys, config):
         self.api_keys = api_keys
         self.config = config
 
-        self.llm = self.get_llm()
+        self.llm = self.get_llm().bind_tools(tools)
         self.vector_store = self.get_vector_store()
 
         self.graph = SupportAgentGraph(llm=self.llm, vector_store=self.vector_store)

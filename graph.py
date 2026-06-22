@@ -1,8 +1,10 @@
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import START, END, StateGraph, MessagesState
-from langchain_core.messages import HumanMessage,SystemMessage
+from langgraph.prebuilt import tools_condition, ToolNode
 from langchain_core.documents import Document
+from langchain_core.messages import HumanMessage,SystemMessage
 from prompts import BASE_SYS_MSG, SYS_MSG_AUGMENTATION
+from tools import tools
 
 class AgentState(MessagesState):
     sys_msg_text: str
@@ -53,12 +55,14 @@ class SupportAgentGraph:
         builder.add_node("retrieve", self.get_retrieve_node())
         builder.add_node("augment", self.augment_node)
         builder.add_node("assistant", self.get_assistant_node())
+        builder.add_node("tools", ToolNode(tools))
 
         builder.add_edge(START, "base_context")
         builder.add_edge("base_context", "retrieve")
         builder.add_edge("retrieve", "augment")
         builder.add_edge("augment", "assistant")
-        builder.add_edge("assistant", END)
+        builder.add_conditional_edges("assistant", tools_condition)
+        builder.add_edge("tools", "assistant")
 
         return builder.compile(checkpointer=memory)
 
@@ -66,9 +70,14 @@ class SupportAgentGraph:
         human_msg = HumanMessage(content=human_message_text)
         state = {"messages": [human_msg]}
         return self.graph.invoke(state, self.config)
-        
+
+    @staticmethod
+    def is_internal_message(msg):
+        return msg.type == "tool" or "tool_calls" in msg.additional_kwargs
+
     def get_conversation(self):
         state = self.graph.get_state(self.config)
         if "messages" not in state.values:
             return []
-        return state.values["messages"]
+        messages = state.values["messages"]
+        return [msg for msg in messages if not self.is_internal_message(msg)]
